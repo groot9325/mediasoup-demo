@@ -152,8 +152,8 @@ export default class RoomClient
 		if (externalVideo)
 		{
 			this._externalCanvas = document.createElement('canvas');
-			this._externalCanvas.width = 100;
-			this._externalCanvas.height = 100;
+			this._externalCanvas.width = 640;
+			this._externalCanvas.height = 480;
 			const canvasContext = this._externalCanvas.getContext('2d');
 
 			canvasContext.fillRect(10, 10, 100, 100);
