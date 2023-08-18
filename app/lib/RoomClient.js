@@ -132,6 +132,10 @@ export default class RoomClient
 
 		// External video.
 		// @type {HTMLVideoElement}
+		this._externalCanvas= null;
+
+		// External video.
+		// @type {HTMLVideoElement}
 		this._externalVideo = null;
 
 		// Enabled end-to-end encryption.
@@ -144,7 +148,56 @@ export default class RoomClient
 		// Next expected dataChannel test number.
 		// @type {Number}
 		this._nextDataChannelTestNumber = 0;
+		// use canvas replace external video
+		if (externalVideo)
+		{
+			this._externalCanvas = document.createElement('canvas');
+			this._externalCanvas.width = 100;
+			this._externalCanvas.height = 100;
+			const canvasContext = this._externalCanvas.getContext('2d');
 
+			canvasContext.fillRect(10, 10, 100, 100);
+			// canvasContext.fillStyle = '#40E0D0';
+
+			const getRandomColor = () => 
+			{
+				const letters = '0123456789ABCDEF';
+				let color = '#';
+			
+				for (let i = 0; i < 6; i++) 
+				{
+					color += letters[Math.floor(Math.random() * 16)];
+				}
+
+				return color;
+			};
+
+			setInterval(() => 
+			{
+				const width = Math.random() * this._externalCanvas.width;
+				const height = Math.random() * this._externalCanvas.height;
+				const x = Math.random() * (this._externalCanvas.width - width);
+				const y = Math.random() * (this._externalCanvas.height - height);
+				
+				canvasContext.fillStyle = getRandomColor();
+				// canvasContext.fillStyle = '#40E0D0';
+				canvasContext.fillRect(x, y, width, height);
+			}, 2000);
+
+			const cavasStream = this._externalCanvas.captureStream(25);
+
+			this._externalVideo = document.createElement('video');
+			this._externalVideo.controls = true;
+			this._externalVideo.muted = true;
+			this._externalVideo.loop = true;
+			this._externalVideo.setAttribute('playsinline', '');
+			this._externalVideo.srcObject = cavasStream;
+
+			this._externalVideo.play()
+				.catch((error) => logger.warn('externalVideo.play() failed:%o', error));
+		}
+
+		/*
 		if (externalVideo)
 		{
 			this._externalVideo = document.createElement('video');
@@ -158,6 +211,7 @@ export default class RoomClient
 			this._externalVideo.play()
 				.catch((error) => logger.warn('externalVideo.play() failed:%o', error));
 		}
+		*/
 
 		// Protoo URL.
 		// @type {String}
@@ -2483,11 +2537,13 @@ export default class RoomClient
 				// Set our media capabilities.
 				store.dispatch(stateActions.setMediaCapabilities(
 					{
-						canSendMic    : this._mediasoupDevice.canProduce('audio'),
+						// canSendMic    : this._mediasoupDevice.canProduce('audio'),
+						canSendMic    : false,
 						canSendWebcam : this._mediasoupDevice.canProduce('video')
 					}));
 
-				this.enableMic();
+				// close mic because canvas has no audio
+				// this.enableMic();
 
 				const devicesCookie = cookiesManager.getDevices();
 
@@ -2642,8 +2698,11 @@ export default class RoomClient
 			));
 		}
 
-		if (this._externalVideo.captureStream)
-			this._externalVideoStream = this._externalVideo.captureStream();
+		if (this._externalVideo.captureStream) 
+		{
+			// this._externalVideoStream = this._externalVideo.captureStream();
+			this._externalVideoStream = this._externalCanvas.captureStream();
+		}
 		else if (this._externalVideo.mozCaptureStream)
 			this._externalVideoStream = this._externalVideo.mozCaptureStream();
 		else
